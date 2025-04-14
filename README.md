@@ -21,6 +21,12 @@ Perfect for selectively copying configuration files, rules, or any other files t
 
 - Go 1.23.1 or higher
 
+### From Homebrew
+
+```bash
+brew install upamune/tap/airule
+```
+
 ### From Source
 
 ```bash

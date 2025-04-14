@@ -1,7 +1,6 @@
 package preview
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -39,7 +38,7 @@ func GeneratePreview(baseDir, relPath string, width, height int) (string, error)
 	}
 
 	// Check if it's a binary file
-	if isBinaryContent(content) || isBinaryFilename(fullPath) {
+	if isBinaryFilename(fullPath) {
 		return fmt.Sprintf("Binary file (%s, %.2f KB)", filepath.Base(fullPath), float64(info.Size())/1024), nil
 	}
 
@@ -113,36 +112,4 @@ func isBinaryFilename(filename string) bool {
 	}
 
 	return false
-}
-
-// isBinaryContent checks if the content appears to be binary
-func isBinaryContent(content []byte) bool {
-	// Check for null bytes or too many non-printable characters
-	nullCount := bytes.Count(content, []byte{0})
-	if nullCount > 0 {
-		return true
-	}
-
-	// Check a sample of the content for non-printable characters
-	sampleSize := 1024
-	if len(content) < sampleSize {
-		sampleSize = len(content)
-	}
-
-	nonPrintableCount := 0
-	for i := 0; i < sampleSize; i++ {
-		c := content[i]
-		if (c < 32 || c > 126) && !isAllowedNonPrintable(c) {
-			nonPrintableCount++
-		}
-	}
-
-	// If more than 10% are non-printable, consider it binary
-	return nonPrintableCount > sampleSize/10
-}
-
-// isAllowedNonPrintable checks if a non-printable character is allowed in text files
-func isAllowedNonPrintable(c byte) bool {
-	// Allow common whitespace characters: tab, newline, carriage return
-	return c == 9 || c == 10 || c == 13
 }
