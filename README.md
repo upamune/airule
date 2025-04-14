@@ -19,7 +19,7 @@ Perfect for selectively copying configuration files, rules, or any other files t
 
 ### Prerequisites
 
-- Go 1.23 or higher
+- Go 1.23.1 or higher
 
 ### From Source
 
@@ -63,7 +63,7 @@ airule --from /path/to/source --to /path/to/destination --include "*.json" --exc
 | `--to` | | Destination directory to copy files to | Yes |
 | `--include` | `-i` | Patterns to include (glob syntax, e.g., '*.go') | No |
 | `--exclude` | `-e` | Patterns to exclude (glob syntax, e.g., '*.tmp') | No |
-| `--version` | | Show version information and exit | No |
+| `--version` | `-v` | Show version information and exit | No |
 
 ### Examples
 
@@ -93,7 +93,7 @@ airule --from ./src --to ./dest --exclude "*.tmp" --exclude "*.bak"
 | Key | Action |
 |-----|--------|
 | ↑/↓ | Navigate through the file list |
-| Space | Select/deselect the current file |
+| Tab | Select/deselect the current file |
 | Enter | Copy selected files |
 | q/Esc/Ctrl+C | Quit the application |
 
@@ -113,13 +113,8 @@ airule/
 │   │   └── copier.go        # File copying logic
 │   ├── finder/
 │   │   └── finder.go        # File finding logic
-│   ├── preview/
-│   │   └── preview.go       # File preview generation
-│   └── tui/
-│       ├── model.go         # TUI model
-│       ├── styles.go        # TUI styling
-│       ├── update.go        # TUI update logic
-│       └── view.go          # TUI view rendering
+│   └── preview/
+│       └── preview.go       # File preview generation
 ├── go.mod                   # Go module file
 └── go.sum                   # Go module checksum file
 ```
@@ -127,9 +122,8 @@ airule/
 ## Dependencies
 
 - [github.com/alecthomas/kong](https://github.com/alecthomas/kong): CLI argument parsing
-- [github.com/charmbracelet/bubbles](https://github.com/charmbracelet/bubbles): UI components for terminal applications
-- [github.com/charmbracelet/bubbletea](https://github.com/charmbracelet/bubbletea): Framework for building terminal user interfaces
 - [github.com/charmbracelet/lipgloss](https://github.com/charmbracelet/lipgloss): Styling for terminal applications
+- [github.com/ktr0731/go-fuzzyfinder](https://github.com/ktr0731/go-fuzzyfinder): Interactive fuzzy-finding selection interface
 
 ## License
 
@@ -142,3 +136,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## Acknowledgements
 
 - [Charm](https://charm.sh/) for their excellent terminal UI libraries
+- [go-fuzzyfinder](https://github.com/ktr0731/go-fuzzyfinder) for the interactive selection interface

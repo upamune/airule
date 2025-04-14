@@ -1,0 +1,94 @@
+{
+  "checksums": [
+    {
+      "id": "github_release/github.com/goreleaser/goreleaser/v2.8.2/goreleaser_Darwin_all.tar.gz",
+      "checksum": "7331F6217BA3683A3B2E7C726D55AA6ADD3F3991716A87DD08533312464F24BF",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/goreleaser/goreleaser/v2.8.2/goreleaser_Linux_arm64.tar.gz",
+      "checksum": "EBF55249A59A4073B89379316953B3CE2E7505E5980F9C22E23399AA4679BE69",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/goreleaser/goreleaser/v2.8.2/goreleaser_Linux_x86_64.tar.gz",
+      "checksum": "847E2105D50DA9133E567CF5450CD437AE29181CABF13AD42683151BA0F5B587",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/goreleaser/goreleaser/v2.8.2/goreleaser_Windows_arm64.zip",
+      "checksum": "75FFFA11BF77BEDB39112E135B32F21FA8AAA1F1DF2923FBC3CC16A6F3FCBC1D",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/goreleaser/goreleaser/v2.8.2/goreleaser_Windows_x86_64.zip",
+      "checksum": "30D6F5E308708CBE09D249D58F7C6473058DC4B54513B2C8B418ECBF77B5ECD9",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/suzuki-shunsuke/pinact/v3.0.3/pinact_darwin_amd64.tar.gz",
+      "checksum": "E5E3FA8296F966ED87D903DD27482820FFB44B5AF3ED9E8EF44097442956BE6E",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/suzuki-shunsuke/pinact/v3.0.3/pinact_darwin_arm64.tar.gz",
+      "checksum": "A7357B9E7060F409F0F2A8CF3D965B31C119B854A99802A8B4D9292E5A56CA82",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/suzuki-shunsuke/pinact/v3.0.3/pinact_linux_amd64.tar.gz",
+      "checksum": "C1A75573357117E8A9564682B814E45E8AE7FA6C17C842A8D400F844CC5BA46F",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/suzuki-shunsuke/pinact/v3.0.3/pinact_linux_arm64.tar.gz",
+      "checksum": "58A27AF9949E99DDDB0B8300D6D0AC1E080D5EF8511668ABDC8991C641DC5DC9",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/suzuki-shunsuke/pinact/v3.0.3/pinact_windows_amd64.zip",
+      "checksum": "33A27FABA3727C6EE7422631C25C3FF6C5EC684F18A65EC1D693E27A571D93EC",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/suzuki-shunsuke/pinact/v3.0.3/pinact_windows_arm64.zip",
+      "checksum": "A3D0B0EA7398F0AABD64383ADB39210FCADED06540920704D87D03CBD3E9CD9E",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "http/golang.org/dl/go1.24.2.darwin-amd64.tar.gz",
+      "checksum": "238D9C065D09FF6AF229D2E3B8B5E85E688318D69F4006FB85A96E41C216EA83",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "http/golang.org/dl/go1.24.2.darwin-arm64.tar.gz",
+      "checksum": "B70F8B3C5B4CCB0AD4FFA5EE91CD38075DF20FDBD953A1DAEDD47F50FBCFF47A",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "http/golang.org/dl/go1.24.2.linux-amd64.tar.gz",
+      "checksum": "68097BD680839CBC9D464A0EDCE4F7C333975E27A90246890E9F1078C7E702AD",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "http/golang.org/dl/go1.24.2.linux-arm64.tar.gz",
+      "checksum": "756274EA4B68FA5535EB9FE2559889287D725A8DA63C6AAE4D5F23778C229F4B",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "http/golang.org/dl/go1.24.2.windows-amd64.zip",
+      "checksum": "29C553AABEE0743E2FFA3E9FA0CDA00EF3B3CC4FF0BC92007F31F80FD69892E1",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "http/golang.org/dl/go1.24.2.windows-arm64.zip",
+      "checksum": "AB267F7F9A3366D48D7664BE9E627CE3E63273231430CCE5F7783FB910F14148",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "registries/github_content/github.com/aquaproj/aqua-registry/v4.345.0/registry.yaml",
+      "checksum": "7CC6E2AF785FDD34A45B9ADB7E31B418D89E4B99D555208F3B1B74F8D362CC61",
+      "algorithm": "sha256"
+    }
+  ]
+}
