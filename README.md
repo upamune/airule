@@ -67,8 +67,10 @@ airule --from /path/to/source --to /path/to/destination --include "*.json" --exc
 |----------|-------|-------------|----------|
 | `--from` | | Source directory to copy files from. Can also be set via the `AIRULE_FROM` environment variable. | Yes |
 | `--to` | | Destination directory to copy files to. Can also be set via the `AIRULE_TO` environment variable. | Yes |
-| `--include` | `-i` | Patterns to include (glob syntax, e.g., '*.go') | No |
-| `--exclude` | `-e` | Patterns to exclude (glob syntax, e.g., '*.tmp') | No |
+| `--include` | `-i` | Patterns to include (glob syntax, e.g., '*.go') Can also be set via the `AIRULE_INCLUDE` environment variable. | No |
+| `--exclude` | `-e` | Patterns to exclude (glob syntax, e.g., '*.tmp') Can also be set via the `AIRULE_EXCLUDE` environment variable. | No |
+| `--select-all` | | Select all files by default. Can also be set via the `AIRULE_SELECT_ALL` environment variable. | No |
+| `--pre-select` | | Patterns to pre-select (glob syntax, e.g., '*.go'). Can be specified multiple times. Can also be set via the `AIRULE_PRE_SELECT` environment variable. | No |
 | `--version` | `-v` | Show version information and exit | No |
 
 ### Examples
@@ -85,11 +87,24 @@ Copy all files except temporary files:
 airule --from ./src --to ./dest --exclude "*.tmp" --exclude "*.bak"
 ```
 
+Copy all files and preselect all files by default:
+
+```bash
+airule --from ./config --to ./backup --select-all
+```
+
+Copy files with specific patterns preselected:
+
+```bash
+airule --from ./src --to ./dest --pre-select "*.json" --pre-select "config/*.yaml"
+```
+
 ## Key Features
 
 - **Interactive File Selection**: Browse and select files using a terminal user interface
 - **File Preview**: View file contents before copying
 - **Pattern Filtering**: Include or exclude files based on glob patterns
+- **File Preselection**: Automatically select all files or files matching specific patterns
 - **Directory Structure Preservation**: Maintains the original directory structure when copying
 - **Binary File Detection**: Automatically detects and handles binary files
 - **Large File Handling**: Provides size information for files too large to preview

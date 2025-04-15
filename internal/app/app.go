@@ -2,6 +2,8 @@ package app
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ktr0731/go-fuzzyfinder"
@@ -23,6 +25,36 @@ func NewApp(cliArgs cli.CLI) *App {
 	}
 }
 
+// matchesAnyPattern checks if a file path matches any of the provided patterns
+func matchesAnyPattern(filePath string, patterns []string) bool {
+	for _, pattern := range patterns {
+		// Match against the full path or just the basename if the pattern doesn't contain a separator
+		base := filepath.Base(filePath)
+		matchPath, _ := filepath.Match(pattern, filePath)
+		matchBase := false
+		if !strings.Contains(pattern, string(filepath.Separator)) {
+			matchBase, _ = filepath.Match(pattern, base)
+		}
+		if matchPath || matchBase {
+			return true
+		}
+
+		// Handle directory patterns specifically (e.g., "dir/*" or "dir/**")
+		if strings.HasSuffix(pattern, "/*") || strings.HasSuffix(pattern, "/**") {
+			dirPattern := strings.TrimSuffix(strings.TrimSuffix(pattern, "*"), "/")
+			// Ensure dirPattern is not empty and path actually starts with it + separator
+			if dirPattern != "" && strings.HasPrefix(filePath, dirPattern+string(filepath.Separator)) {
+				return true
+			}
+			// Also handle case where the pattern *is* the directory path itself
+			if filePath == dirPattern {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // Run executes the application
 func (a *App) Run() error {
 	// Find files based on include/exclude patterns
@@ -33,6 +65,28 @@ func (a *App) Run() error {
 
 	if len(files) == 0 {
 		return fmt.Errorf("no files found matching the criteria")
+	}
+
+	// Create preselected indices based on SelectAll flag and PreSelect patterns
+	var preselectedIndices []int
+	if a.cliArgs.SelectAll {
+		// If SelectAll is true, preselect all files
+		for i := range files {
+			preselectedIndices = append(preselectedIndices, i)
+		}
+	} else if len(a.cliArgs.PreSelect) > 0 {
+		// If PreSelect patterns are provided, preselect matching files
+		for i, file := range files {
+			if matchesAnyPattern(file, a.cliArgs.PreSelect) {
+				preselectedIndices = append(preselectedIndices, i)
+			}
+		}
+	}
+
+	// Create a map for quick lookup of preselected indices
+	preselectedMap := make(map[int]bool)
+	for _, idx := range preselectedIndices {
+		preselectedMap[idx] = true
 	}
 
 	// Use go-fuzzyfinder to select files
@@ -55,6 +109,9 @@ func (a *App) Run() error {
 		fuzzyfinder.WithPromptString("Select files to copy (Tab to select, Enter to confirm): "),
 		fuzzyfinder.WithHeader("airule - Rule File Selector"),
 		fuzzyfinder.WithCursorPosition(fuzzyfinder.CursorPositionTop),
+		fuzzyfinder.WithPreselected(func(i int) bool {
+			return preselectedMap[i]
+		}),
 	)
 
 	// Handle cancellation (Esc key)
