@@ -14,8 +14,8 @@ var (
 
 // CLI represents the command-line interface structure
 type CLI struct {
-	From    string   `name:"from" help:"Source directory to copy files from." type:"path"`
-	To      string   `name:"to" help:"Destination directory to copy files to." type:"path"`
+	From    string   `name:"from" help:"Source directory to copy files from." type:"path" env:"AIRULE_FROM"`
+	To      string   `name:"to" help:"Destination directory to copy files to." type:"path" env:"AIRULE_TO"`
 	Include []string `name:"include" short:"i" help:"Patterns to include (glob syntax, e.g. '*.go')."`
 	Exclude []string `name:"exclude" short:"e" help:"Patterns to exclude (glob syntax, e.g. '*.tmp')."`
 

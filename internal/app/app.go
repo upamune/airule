@@ -54,6 +54,7 @@ func (a *App) Run() error {
 		}),
 		fuzzyfinder.WithPromptString("Select files to copy (Tab to select, Enter to confirm): "),
 		fuzzyfinder.WithHeader("airule - Rule File Selector"),
+		fuzzyfinder.WithCursorPosition(fuzzyfinder.CursorPositionTop),
 	)
 
 	// Handle cancellation (Esc key)

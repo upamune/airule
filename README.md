@@ -65,8 +65,8 @@ airule --from /path/to/source --to /path/to/destination --include "*.json" --exc
 
 | Argument | Short | Description | Required |
 |----------|-------|-------------|----------|
-| `--from` | | Source directory to copy files from | Yes |
-| `--to` | | Destination directory to copy files to | Yes |
+| `--from` | | Source directory to copy files from. Can also be set via the `AIRULE_FROM` environment variable. | Yes |
+| `--to` | | Destination directory to copy files to. Can also be set via the `AIRULE_TO` environment variable. | Yes |
 | `--include` | `-i` | Patterns to include (glob syntax, e.g., '*.go') | No |
 | `--exclude` | `-e` | Patterns to exclude (glob syntax, e.g., '*.tmp') | No |
 | `--version` | `-v` | Show version information and exit | No |
