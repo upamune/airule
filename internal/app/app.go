@@ -179,7 +179,7 @@ func (a *App) Run() error {
 		Foreground(lipgloss.Color("105"))
 	fmt.Println(copyingStyle.Render("Copying files..."))
 
-	if err := copier.CopyFiles(a.cliArgs.From, a.cliArgs.To, selectedFiles); err != nil {
+	if err := copier.CopyFiles(a.cliArgs.From, a.cliArgs.To, selectedFiles, a.cliArgs.Clean); err != nil {
 		return fmt.Errorf("error copying files: %w", err)
 	}
 

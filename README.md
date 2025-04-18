@@ -71,6 +71,7 @@ airule --from /path/to/source --to /path/to/destination --include "*.json" --exc
 | `--exclude` | `-e` | Patterns to exclude (glob syntax, e.g., '*.tmp') Can also be set via the `AIRULE_EXCLUDE` environment variable. | No |
 | `--select-all` | | Select all files by default. Can also be set via the `AIRULE_SELECT_ALL` environment variable. | No |
 | `--pre-select` | | Patterns to pre-select (glob syntax, e.g., '*.go'). Can be specified multiple times. Can also be set via the `AIRULE_PRE_SELECT` environment variable. | No |
+| `--clean` | | Clean the destination directory before copying (preserves hidden files). Can also be set via the `AIRULE_CLEAN` environment variable. | No |
 | `--version` | `-v` | Show version information and exit | No |
 
 ### Examples
