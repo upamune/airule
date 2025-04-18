@@ -20,6 +20,7 @@ type CLI struct {
 	Exclude   []string `name:"exclude" short:"e" help:"Patterns to exclude (glob syntax, e.g. '*.tmp')." env:"AIRULE_EXCLUDE"`
 	SelectAll bool     `name:"select-all" help:"Select all files matching the include/exclude patterns." env:"AIRULE_SELECT_ALL"`
 	PreSelect []string `name:"pre-select" help:"Patterns to pre-select (glob syntax, e.g. '*.go')." env:"AIRULE_PRE_SELECT"`
+	Clean     bool     `name:"clean" help:"Clean the destination directory before copying (preserves hidden files)." default:"false" env:"AIRULE_CLEAN"`
 
 	Version kong.VersionFlag `short:"v" help:"Show version and exit."`
 }
