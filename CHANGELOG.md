@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.0.6](https://github.com/upamune/airule/compare/v0.0.5...v0.0.6) - 2025-05-28
+- fix: Exclude base directory from parent directory checks in preservation logic by @upamune in https://github.com/upamune/airule/pull/11
+
 ## [v0.0.5](https://github.com/upamune/airule/compare/v0.0.4...v0.0.5) - 2025-05-28
 - feat: Add --clean option to CLI by @upamune in https://github.com/upamune/airule/pull/9
 
