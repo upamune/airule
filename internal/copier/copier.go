@@ -47,73 +47,6 @@ func matchesAnyPattern(filePath string, patterns []string) bool {
 	return false
 }
 
-// shouldPreserve checks if a path should be preserved based on exclusion patterns
-// It returns true if:
-// 1. The path is hidden (starts with a dot)
-// 2. The path matches any of the exclusion patterns
-// 3. The path is a directory that contains files matching any of the exclusion patterns
-func shouldPreserve(path string, isDir bool, excludePatterns []string) bool {
-	// Check if it's a hidden file/directory
-	name := filepath.Base(path)
-	if len(name) > 0 && name[0] == '.' {
-		return true
-	}
-
-	// Check if the path matches any of the exclusion patterns
-	if matchesAnyPattern(path, excludePatterns) {
-		return true
-	}
-
-	// For directories, check if any exclusion pattern would match files inside this directory
-	if isDir {
-		for _, pattern := range excludePatterns {
-			// Check if this is a directory pattern (e.g., "dir/*" or "dir/**")
-			if strings.HasSuffix(pattern, "/*") || strings.HasSuffix(pattern, "/**") {
-				dirPattern := strings.TrimSuffix(strings.TrimSuffix(pattern, "*"), "/")
-				// If the pattern directory is a subdirectory of the current directory, preserve it
-				if dirPattern != "" && strings.HasPrefix(dirPattern, path+string(filepath.Separator)) {
-					return true
-				}
-				// If the current directory is the pattern directory itself, preserve it
-				if path == dirPattern {
-					return true
-				}
-			}
-		}
-	}
-
-	// Special case: Check if any pattern directly targets a file in this directory
-	// This handles patterns like "config/*.json" which should preserve the "config" directory
-	if isDir {
-		dirPrefix := path + string(filepath.Separator)
-		for _, pattern := range excludePatterns {
-			// Skip directory wildcard patterns as they're handled above
-			if strings.HasSuffix(pattern, "/*") || strings.HasSuffix(pattern, "/**") {
-				continue
-			}
-
-			// Check if the pattern targets a file in this directory
-			if strings.Contains(pattern, string(filepath.Separator)) {
-				patternDir := filepath.Dir(pattern)
-				if patternDir == path || strings.HasPrefix(patternDir, dirPrefix) {
-					return true
-				}
-			}
-		}
-	}
-
-	return false
-}
-
-// checkPreservationRecursive checks if a path or any item within it (if it's a directory)
-// should be preserved based on hidden status or exclusion patterns.
-// It returns true if the path itself should be preserved OR if it's a directory
-// containing at least one item that should be preserved recursively OR if any parent
-// directory should be preserved.
-func checkPreservationRecursive(path string, excludePatterns []string) (bool, error) {
-	return checkPreservationRecursiveWithBase(path, "", excludePatterns)
-}
-
 // checkPreservationRecursiveWithBase is the internal implementation that tracks the base directory
 func checkPreservationRecursiveWithBase(path, baseDir string, excludePatterns []string) (bool, error) {
 	info, err := os.Lstat(path) // Use Lstat to handle symlinks if they were ever supported
@@ -201,9 +134,8 @@ func checkPreservationRecursiveWithBase(path, baseDir string, excludePatterns []
 		entries, err := os.ReadDir(path)
 		if err != nil {
 			// Handle cases like permission denied reading directory
-			// If we can't read it, we can't know if it needs preservation, err on the side of caution?
-			// Or assume it doesn't need preservation if unreadable? Let's return error for now.
-			return false, fmt.Errorf("failed to read directory %s for preservation check: %w", path, err)
+			// If we can't read it, err on the side of caution and preserve it
+			return true, nil
 		}
 		for _, entry := range entries {
 			childPath := filepath.Join(path, entry.Name())
@@ -394,39 +326,10 @@ func copyFile(src, dst string) error {
 }
 
 // copyDir copies a directory recursively from src to dst
-// while preserving hidden files in the destination directory
 func copyDir(src, dst string) error {
-	// Check if destination directory exists
-	_, err := os.Stat(dst)
-	if err == nil {
-		// Directory exists, selectively remove non-hidden contents
-		entries, err := os.ReadDir(dst)
-		if err != nil {
-			return fmt.Errorf("failed to read destination directory: %w", err)
-		}
-
-		// Remove each non-hidden entry
-		for _, entry := range entries {
-			name := entry.Name()
-			// Skip files/directories that start with a dot (hidden)
-			if len(name) > 0 && name[0] == '.' {
-				continue
-			}
-
-			// Remove non-hidden file/directory
-			path := filepath.Join(dst, name)
-			if err := os.RemoveAll(path); err != nil {
-				return fmt.Errorf("failed to remove %s: %w", path, err)
-			}
-		}
-	} else if os.IsNotExist(err) {
-		// Directory doesn't exist, create it
-		if err := os.MkdirAll(dst, 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", dst, err)
-		}
-	} else {
-		// Some other error occurred
-		return fmt.Errorf("failed to check destination directory: %w", err)
+	// Create destination directory if it doesn't exist
+	if err := os.MkdirAll(dst, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", dst, err)
 	}
 
 	// Get source directory info for permissions
