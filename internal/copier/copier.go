@@ -80,10 +80,11 @@ func checkPreservationRecursiveWithBase(path, baseDir string, excludePatterns []
 	}
 
 	// 2. Check if any parent directory is hidden or matches exclude patterns
+	// But skip the base directory itself (the directory we're cleaning)
 	currentPath := path
 	for {
 		parent := filepath.Dir(currentPath)
-		if parent == currentPath || parent == "." || parent == "/" {
+		if parent == currentPath || parent == "." || parent == "/" || parent == baseDir {
 			break
 		}
 
