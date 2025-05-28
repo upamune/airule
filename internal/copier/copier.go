@@ -5,50 +5,233 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 )
 
-// clearDestinationDir selectively removes files and subdirectories in the destination directory
-// while preserving files and directories that start with a dot (hidden files/directories).
-// It ensures the directory exists after clearing.
-func clearDestinationDir(dir string) error {
-	// Check if directory exists
-	info, err := os.Stat(dir)
-	if err == nil {
-		// Directory exists, selectively remove contents
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			return fmt.Errorf("failed to read destination directory: %w", err)
+// matchesAnyPattern checks if a file path matches any of the provided patterns
+func matchesAnyPattern(filePath string, patterns []string) bool {
+	for _, pattern := range patterns {
+		// Match against the full path or just the basename if the pattern doesn't contain a separator
+		base := filepath.Base(filePath)
+		matchPath, _ := filepath.Match(pattern, filePath)
+		matchBase := false
+		if !strings.Contains(pattern, string(filepath.Separator)) {
+			matchBase, _ = filepath.Match(pattern, base)
+		}
+		if matchPath || matchBase {
+			return true
 		}
 
-		// Remove each non-hidden entry
-		for _, entry := range entries {
-			name := entry.Name()
-			// Skip files/directories that start with a dot (hidden)
-			if len(name) > 0 && name[0] == '.' {
+		// Handle directory patterns specifically (e.g., "dir/*" or "dir/**")
+		if strings.HasSuffix(pattern, "/*") || strings.HasSuffix(pattern, "/**") {
+			dirPattern := strings.TrimSuffix(strings.TrimSuffix(pattern, "*"), "/")
+			// Ensure dirPattern is not empty and path actually starts with it + separator
+			if dirPattern != "" && strings.HasPrefix(filePath, dirPattern+string(filepath.Separator)) {
+				return true
+			}
+			// Also handle case where the pattern *is* the directory path itself
+			if filePath == dirPattern {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// shouldPreserve checks if a path should be preserved based on exclusion patterns
+// It returns true if:
+// 1. The path is hidden (starts with a dot)
+// 2. The path matches any of the exclusion patterns
+// 3. The path is a directory that contains files matching any of the exclusion patterns
+func shouldPreserve(path string, isDir bool, excludePatterns []string) bool {
+	// Check if it's a hidden file/directory
+	name := filepath.Base(path)
+	if len(name) > 0 && name[0] == '.' {
+		return true
+	}
+
+	// Check if the path matches any of the exclusion patterns
+	if matchesAnyPattern(path, excludePatterns) {
+		return true
+	}
+
+	// For directories, check if any exclusion pattern would match files inside this directory
+	if isDir {
+		for _, pattern := range excludePatterns {
+			// Check if this is a directory pattern (e.g., "dir/*" or "dir/**")
+			if strings.HasSuffix(pattern, "/*") || strings.HasSuffix(pattern, "/**") {
+				dirPattern := strings.TrimSuffix(strings.TrimSuffix(pattern, "*"), "/")
+				// If the pattern directory is a subdirectory of the current directory, preserve it
+				if dirPattern != "" && strings.HasPrefix(dirPattern, path+string(filepath.Separator)) {
+					return true
+				}
+				// If the current directory is the pattern directory itself, preserve it
+				if path == dirPattern {
+					return true
+				}
+			}
+		}
+	}
+
+	// Special case: Check if any pattern directly targets a file in this directory
+	// This handles patterns like "config/*.json" which should preserve the "config" directory
+	if isDir {
+		dirPrefix := path + string(filepath.Separator)
+		for _, pattern := range excludePatterns {
+			// Skip directory wildcard patterns as they're handled above
+			if strings.HasSuffix(pattern, "/*") || strings.HasSuffix(pattern, "/**") {
 				continue
 			}
 
-			// Remove non-hidden file/directory
-			path := filepath.Join(dir, name)
-			if err := os.RemoveAll(path); err != nil {
-				return fmt.Errorf("failed to remove %s: %w", path, err)
+			// Check if the pattern targets a file in this directory
+			if strings.Contains(pattern, string(filepath.Separator)) {
+				patternDir := filepath.Dir(pattern)
+				if patternDir == path || strings.HasPrefix(patternDir, dirPrefix) {
+					return true
+				}
 			}
 		}
-	} else if os.IsNotExist(err) {
-		// Directory doesn't exist, create it
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to create destination directory: %w", err)
+	}
+
+	return false
+}
+
+// checkPreservationRecursive checks if a path or any item within it (if it's a directory)
+// should be preserved based on hidden status or exclusion patterns.
+// It returns true if the path itself should be preserved OR if it's a directory
+// containing at least one item that should be preserved recursively.
+func checkPreservationRecursive(path string, excludePatterns []string) (bool, error) {
+	info, err := os.Lstat(path) // Use Lstat to handle symlinks if they were ever supported
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil // Path doesn't exist, definitely not preserved
 		}
-		return nil
-	} else {
+		return false, err // Other stat error
+	}
+
+	// 1. Check if the item itself is hidden or matches exclude patterns
+	name := filepath.Base(path)
+	isDir := info.IsDir()
+	isHidden := len(name) > 0 && name[0] == '.'
+	matchesExclusion := matchesAnyPattern(path, excludePatterns)
+
+	if isHidden || matchesExclusion {
+		return true, nil // Item itself should be preserved
+	}
+
+	// 2. If it's not preserved itself, but it's a directory, check its contents recursively.
+	if isDir {
+		entries, err := os.ReadDir(path)
+		if err != nil {
+			// Handle cases like permission denied reading directory
+			// If we can't read it, we can't know if it needs preservation, err on the side of caution?
+			// Or assume it doesn't need preservation if unreadable? Let's return error for now.
+			return false, fmt.Errorf("failed to read directory %s for preservation check: %w", path, err)
+		}
+		for _, entry := range entries {
+			childPath := filepath.Join(path, entry.Name())
+			// Recursively check child. If any child needs preservation, this dir needs it too.
+			preserveChild, err := checkPreservationRecursive(childPath, excludePatterns)
+			if err != nil {
+				return false, err // Propagate error from recursive call
+			}
+			if preserveChild {
+				return true, nil // Found a child that needs preservation, so this directory must be kept
+			}
+		}
+	}
+
+	// If we reach here, neither the item itself nor any of its children (if dir) need preservation.
+	return false, nil
+}
+
+// clearDestinationDir selectively removes files and subdirectories in the destination directory
+// while preserving files/directories that are hidden or match exclude patterns,
+// including items nested within directories and the parent directories needed to hold them.
+func clearDestinationDir(dir string, excludePatterns []string) error {
+	_, err := os.Stat(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// Directory doesn't exist, create it
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return fmt.Errorf("failed to create destination directory: %w", err)
+			}
+			return nil
+		}
 		// Some other error occurred
 		return fmt.Errorf("failed to check destination directory: %w", err)
 	}
 
-	// Ensure directory permissions are set correctly if it was modified
-	if info != nil && info.Mode().Perm() != 0755 {
+	// Use filepath.WalkDir to traverse the directory.
+	// We need to remove items *after* traversing their children if the parent directory
+	// itself doesn't need preservation but some children do. This is tricky with WalkDir.
+	// A simpler approach might be to collect all paths to potentially remove first,
+	// then iterate through them and check preservation *again* before removing.
+
+	pathsToRemove := []string{}
+	err = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err // Propagate walk errors
+		}
+		// Skip root
+		if path == dir {
+			return nil
+		}
+
+		// Tentatively add all paths for removal check later
+		pathsToRemove = append(pathsToRemove, path)
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("error walking destination directory %s: %w", dir, err)
+	}
+
+	// Sort paths in reverse order so children are processed before parents
+	sort.Slice(pathsToRemove, func(i, j int) bool {
+		return len(pathsToRemove[i]) > len(pathsToRemove[j])
+	})
+
+	// Now, check each path for preservation and remove if necessary
+	for _, path := range pathsToRemove {
+		// Check if the path still exists (might have been removed as part of a parent dir)
+		if _, err := os.Lstat(path); os.IsNotExist(err) {
+			continue // Already removed
+		}
+
+		preserve, err := checkPreservationRecursive(path, excludePatterns)
+		if err != nil {
+			// Log or handle error during check, maybe skip removal?
+			fmt.Fprintf(os.Stderr, "Warning: error checking preservation for %s, skipping removal: %v\n", path, err)
+			continue
+		}
+
+		if !preserve {
+			// Attempt to remove. Use RemoveAll for directories.
+			if err := os.RemoveAll(path); err != nil {
+				// Log or handle error during removal
+				fmt.Fprintf(os.Stderr, "Warning: failed to remove %s: %v\n", path, err)
+				// Decide whether to continue or return error. Let's continue for now.
+			}
+		}
+	}
+
+	// Ensure the root directory still exists and has correct permissions
+	// (It shouldn't have been added to pathsToRemove, but double-check)
+	info, err := os.Stat(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// This is unexpected if removal logic is correct, recreate it.
+			fmt.Fprintf(os.Stderr, "Warning: destination directory %s was unexpectedly removed, recreating.\n", dir)
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return fmt.Errorf("failed to recreate destination directory: %w", err)
+			}
+		} else {
+			return fmt.Errorf("failed to stat destination directory after clear: %w", err)
+		}
+	} else if info.Mode().Perm() != 0755 {
 		if err := os.Chmod(dir, 0755); err != nil {
-			return fmt.Errorf("failed to set directory permissions: %w", err)
+			return fmt.Errorf("failed to set directory permissions after clear: %w", err)
 		}
 	}
 
@@ -57,12 +240,12 @@ func clearDestinationDir(dir string) error {
 
 // CopyFiles copies files from the source directory to the destination directory
 // If cleanDest is true, it will clear the destination directory before copying,
-// while preserving hidden files (those starting with a dot).
+// while preserving hidden files (those starting with a dot) and files matching cleanExcludePatterns.
 // If cleanDest is false, it will not clear the destination directory.
-func CopyFiles(fromDir, toDir string, relativePaths []string, cleanDest bool) error {
+func CopyFiles(fromDir, toDir string, relativePaths []string, cleanDest bool, cleanExcludePatterns []string) error {
 	// Clear the destination directory before copying if cleanDest is true
 	if cleanDest {
-		if err := clearDestinationDir(toDir); err != nil {
+		if err := clearDestinationDir(toDir, cleanExcludePatterns); err != nil {
 			return err
 		}
 	} else {

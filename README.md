@@ -71,7 +71,8 @@ airule --from /path/to/source --to /path/to/destination --include "*.json" --exc
 | `--exclude` | `-e` | Patterns to exclude (glob syntax, e.g., '*.tmp') Can also be set via the `AIRULE_EXCLUDE` environment variable. | No |
 | `--select-all` | | Select all files by default. Can also be set via the `AIRULE_SELECT_ALL` environment variable. | No |
 | `--pre-select` | | Patterns to pre-select (glob syntax, e.g., '*.go'). Can be specified multiple times. Can also be set via the `AIRULE_PRE_SELECT` environment variable. | No |
-| `--clean` | | Clean the destination directory before copying (preserves hidden files). Can also be set via the `AIRULE_CLEAN` environment variable. | No |
+| `--clean` | | Clean the destination directory before copying (preserves hidden files, default: true). Can also be set via the `AIRULE_CLEAN` environment variable. | No |
+| `--clean-exclude` | | Patterns to exclude from cleaning (glob syntax, e.g., '.gitkeep', 'config/*'). Default: '.gitkeep'. Can also be set via the `AIRULE_CLEAN_EXCLUDE` environment variable. | No |
 | `--version` | `-v` | Show version information and exit | No |
 
 ### Examples
@@ -98,6 +99,18 @@ Copy files with specific patterns preselected:
 
 ```bash
 airule --from ./src --to ./dest --pre-select "*.json" --pre-select "config/*.yaml"
+```
+
+Copy files while preserving specific files in the destination directory:
+
+```bash
+airule --from ./src --to ./dest --clean-exclude ".gitkeep" --clean-exclude "important.txt"
+```
+
+Copy files while preserving entire directories in the destination:
+
+```bash
+airule --from ./src --to ./dest --clean-exclude "config/*" --clean-exclude "data/**"
 ```
 
 ## Key Features
