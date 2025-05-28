@@ -14,12 +14,14 @@ var (
 
 // CLI represents the command-line interface structure
 type CLI struct {
-	From      string   `name:"from" help:"Source directory to copy files from." type:"path" env:"AIRULE_FROM"`
-	To        string   `name:"to" help:"Destination directory to copy files to." type:"path" env:"AIRULE_TO"`
-	Include   []string `name:"include" short:"i" help:"Patterns to include (glob syntax, e.g. '*.go')." env:"AIRULE_INCLUDE"`
-	Exclude   []string `name:"exclude" short:"e" help:"Patterns to exclude (glob syntax, e.g. '*.tmp')." env:"AIRULE_EXCLUDE"`
-	SelectAll bool     `name:"select-all" help:"Select all files matching the include/exclude patterns." env:"AIRULE_SELECT_ALL"`
-	PreSelect []string `name:"pre-select" help:"Patterns to pre-select (glob syntax, e.g. '*.go')." env:"AIRULE_PRE_SELECT"`
+	From         string   `name:"from" help:"Source directory to copy files from." type:"path" env:"AIRULE_FROM"`
+	To           string   `name:"to" help:"Destination directory to copy files to." type:"path" env:"AIRULE_TO"`
+	Include      []string `name:"include" short:"i" help:"Patterns to include (glob syntax, e.g. '*.go')." env:"AIRULE_INCLUDE"`
+	Exclude      []string `name:"exclude" short:"e" help:"Patterns to exclude (glob syntax, e.g. '*.tmp')." env:"AIRULE_EXCLUDE"`
+	SelectAll    bool     `name:"select-all" help:"Select all files matching the include/exclude patterns." env:"AIRULE_SELECT_ALL"`
+	PreSelect    []string `name:"pre-select" help:"Patterns to pre-select (glob syntax, e.g. '*.go')." env:"AIRULE_PRE_SELECT"`
+	Clean        bool     `name:"clean" help:"Clean the destination directory before copying (preserves hidden files)." default:"true" env:"AIRULE_CLEAN"`
+	CleanExclude []string `name:"clean-exclude" help:"Patterns to exclude from cleaning (glob syntax, e.g. '.gitkeep', 'config/*')." default:".gitkeep" env:"AIRULE_CLEAN_EXCLUDE"`
 
 	Version kong.VersionFlag `short:"v" help:"Show version and exit."`
 }
