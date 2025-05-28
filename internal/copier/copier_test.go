@@ -504,6 +504,8 @@ func TestCopyFilesWithCleanExclusions(t *testing.T) {
 	// 3. All files/dirs matching the clean-exclude patterns
 	expectedFiles := []string{
 		".hidden_preserve1",      // Preserved top-level hidden file
+		"config",                 // Preserved by exclude pattern "config/*.json"
+		"config/important.json",  // Preserved by exclude pattern "config/*.json"
 		"dir1",                   // Directory containing preserved hidden file and copied file
 		"dir1/.hidden_preserve2", // Preserved nested hidden file
 		"dir1/file3.txt",         // Copied

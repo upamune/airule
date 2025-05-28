@@ -35,6 +35,14 @@ func matchesAnyPattern(filePath string, patterns []string) bool {
 				return true
 			}
 		}
+
+		// Handle glob patterns with filepath.Match for more complex patterns
+		if strings.Contains(pattern, "*") {
+			matched, _ := filepath.Match(pattern, filePath)
+			if matched {
+				return true
+			}
+		}
 	}
 	return false
 }
@@ -100,8 +108,14 @@ func shouldPreserve(path string, isDir bool, excludePatterns []string) bool {
 // checkPreservationRecursive checks if a path or any item within it (if it's a directory)
 // should be preserved based on hidden status or exclusion patterns.
 // It returns true if the path itself should be preserved OR if it's a directory
-// containing at least one item that should be preserved recursively.
+// containing at least one item that should be preserved recursively OR if any parent
+// directory should be preserved.
 func checkPreservationRecursive(path string, excludePatterns []string) (bool, error) {
+	return checkPreservationRecursiveWithBase(path, "", excludePatterns)
+}
+
+// checkPreservationRecursiveWithBase is the internal implementation that tracks the base directory
+func checkPreservationRecursiveWithBase(path, baseDir string, excludePatterns []string) (bool, error) {
 	info, err := os.Lstat(path) // Use Lstat to handle symlinks if they were ever supported
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -110,18 +124,80 @@ func checkPreservationRecursive(path string, excludePatterns []string) (bool, er
 		return false, err // Other stat error
 	}
 
+	// Calculate relative path for pattern matching
+	var relPath string
+	if baseDir != "" {
+		var err error
+		relPath, err = filepath.Rel(baseDir, path)
+		if err != nil {
+			relPath = path // Fallback to absolute path
+		}
+	} else {
+		relPath = path
+	}
+
 	// 1. Check if the item itself is hidden or matches exclude patterns
 	name := filepath.Base(path)
 	isDir := info.IsDir()
 	isHidden := len(name) > 0 && name[0] == '.'
-	matchesExclusion := matchesAnyPattern(path, excludePatterns)
+	matchesExclusion := matchesAnyPattern(relPath, excludePatterns)
 
 	if isHidden || matchesExclusion {
 		return true, nil // Item itself should be preserved
 	}
 
-	// 2. If it's not preserved itself, but it's a directory, check its contents recursively.
+	// 2. Check if any parent directory is hidden or matches exclude patterns
+	currentPath := path
+	for {
+		parent := filepath.Dir(currentPath)
+		if parent == currentPath || parent == "." || parent == "/" {
+			break
+		}
+
+		// Calculate relative path for parent
+		var parentRelPath string
+		if baseDir != "" {
+			var err error
+			parentRelPath, err = filepath.Rel(baseDir, parent)
+			if err != nil {
+				parentRelPath = parent // Fallback to absolute path
+			}
+		} else {
+			parentRelPath = parent
+		}
+
+		parentName := filepath.Base(parent)
+		parentIsHidden := len(parentName) > 0 && parentName[0] == '.'
+		parentMatchesExclusion := matchesAnyPattern(parentRelPath, excludePatterns)
+
+		if parentIsHidden || parentMatchesExclusion {
+			return true, nil // Parent directory should be preserved, so this item should too
+		}
+
+		currentPath = parent
+	}
+
+	// 3. If it's a directory, check if any exclusion pattern would match files inside this directory
 	if isDir {
+		for _, pattern := range excludePatterns {
+			// Check if this is a directory pattern (e.g., "dir/*" or "dir/**")
+			if strings.HasSuffix(pattern, "/*") || strings.HasSuffix(pattern, "/**") {
+				dirPattern := strings.TrimSuffix(strings.TrimSuffix(pattern, "*"), "/")
+				if relPath == dirPattern {
+					return true, nil // This directory is targeted by a wildcard pattern
+				}
+			}
+
+			// Check if any pattern targets files in this directory (e.g., "config/*.json")
+			if strings.Contains(pattern, string(filepath.Separator)) && strings.Contains(pattern, "*") {
+				patternDir := filepath.Dir(pattern)
+				if relPath == patternDir {
+					return true, nil // This directory contains files that match the pattern
+				}
+			}
+		}
+
+		// Check its contents recursively
 		entries, err := os.ReadDir(path)
 		if err != nil {
 			// Handle cases like permission denied reading directory
@@ -132,7 +208,7 @@ func checkPreservationRecursive(path string, excludePatterns []string) (bool, er
 		for _, entry := range entries {
 			childPath := filepath.Join(path, entry.Name())
 			// Recursively check child. If any child needs preservation, this dir needs it too.
-			preserveChild, err := checkPreservationRecursive(childPath, excludePatterns)
+			preserveChild, err := checkPreservationRecursiveWithBase(childPath, baseDir, excludePatterns)
 			if err != nil {
 				return false, err // Propagate error from recursive call
 			}
@@ -199,7 +275,7 @@ func clearDestinationDir(dir string, excludePatterns []string) error {
 			continue // Already removed
 		}
 
-		preserve, err := checkPreservationRecursive(path, excludePatterns)
+		preserve, err := checkPreservationRecursiveWithBase(path, dir, excludePatterns)
 		if err != nil {
 			// Log or handle error during check, maybe skip removal?
 			fmt.Fprintf(os.Stderr, "Warning: error checking preservation for %s, skipping removal: %v\n", path, err)
